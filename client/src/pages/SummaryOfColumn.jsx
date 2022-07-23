@@ -39,6 +39,7 @@ function SummaryOfColumn() {
       .post("http://localhost:5000/train/" + filename, postData)
       .then(function ({ data }) {
         console.log(data);
+        data["filename"] = filename;
         navigate("/visualizer", { state: data });
       })
       .catch(function (error) {

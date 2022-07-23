@@ -75,9 +75,9 @@ def upload():
 
             filepath = app.config['UPLOAD_FOLDER'] + '/' + filename
             file.save(filepath)
-            
+
             update = True
-            doc = Data_Lake.objects(name = filename).first()
+            doc = Data_Lake.objects(name=filename).first()
             if doc is None:
                 update = False
                 doc = Data_Lake(name=filename)
@@ -179,28 +179,43 @@ def train(filename):
     delete_cols = set(read_file.columns).difference(required_cols)
     read_file.drop(columns=delete_cols, inplace=True)
 
-    read_file = df_string_mapper(read_file)
+    # read_file = df_string_mapper(read_file)
 
     print("Df string to int")
 
     # Remove Outliers
-    Q1 = read_file[remove_outlier_cols].quantile(0.25)
-    Q3 = read_file[remove_outlier_cols].quantile(0.75)
-    # Inter Quartile Range
-    IQR = Q3 - Q1
+    try:
+        Q1 = read_file[remove_outlier_cols].quantile(0.25)
+        Q3 = read_file[remove_outlier_cols].quantile(0.75)
+        # Inter Quartile Range
+        IQR = Q3 - Q1
 
-    read_file = read_file[~((read_file[remove_outlier_cols] < (
-        Q1 - 1.5 * IQR)) | (read_file[remove_outlier_cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
+        read_file = read_file[~((read_file[remove_outlier_cols] < (
+            Q1 - 1.5 * IQR)) | (read_file[remove_outlier_cols] > (Q3 + 1.5 * IQR))).any(axis=1)]
 
-    print("Df remove outliers")
+        print("Df remove outliers")
+    except:
+        pass
 
     # Replace Null
     for col in replace_null_cols:
-        read_file[col] = read_file[col].fillna(read_file[col].mean())
+        try:
+            read_file[col] = read_file[col].fillna(read_file[col].mean())
+        except:
+            pass
+    try:
+        read_file[target_col] = read_file[target_col].fillna(
+            read_file[target_col].mean())
+        print("Df replace Null")
+    except:
+        pass
 
-    read_file[target_col] = read_file[target_col].fillna(
-        read_file[target_col].mean())
-    print("Df replace Null")
+    try:
+        required_cols = list(required_cols)
+        required_cols.remove(target_col)
+        categorical_features.remove(target_col)
+    except:
+        pass
 
     model_comparison_result, results = 0, 0
     if classification.can_apply(read_file[target_col]):
@@ -212,7 +227,27 @@ def train(filename):
         model_comparison_result, results = regression.get_res_model(
             read_file, target_col, TRAINED_MODELS_FOLDER/filename)
 
-    return jsonify({"m": model_comparison_result, "r": results})
+    return jsonify({"cols": list(required_cols), "m": model_comparison_result, "r": results})
+
+
+@app.route('/predict/<filename>', methods=['POST'])
+def predict(filename):
+    df = pd.DataFrame({k: [v] for k, v in request.json.items() })
+    a = -1
+    try:
+        from pycaret.classification import load_model, predict_model
+        model = load_model(str(TRAINED_MODELS_FOLDER/filename))
+        prediction = predict_model(model, data=df)
+        a = prediction['Label'].iloc[0]
+    except:
+        try:
+            from pycaret.regression import load_model, predict_model
+            model = load_model(str(TRAINED_MODELS_FOLDER/filename))
+            prediction = predict_model(model, data=df)
+            a = prediction['Label'].iloc[0]
+        except:
+            pass
+    return jsonify({'ans': int(a)})
 
 
 @app.route("/get-files", methods=['GET'])
