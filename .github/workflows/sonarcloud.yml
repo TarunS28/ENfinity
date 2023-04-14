@@ -26,21 +26,26 @@
 # Feel free to take a look at our documentation (https://docs.sonarcloud.io/getting-started/github/)
 # or reach out to our community forum if you need some help (https://community.sonarsource.com/c/help/sc/9)
 
-name: Build
+name: Test
 on:
   push:
-    branches:
-      - master
   pull_request:
-    types: [opened, synchronize, reopened]
+
+
+    
 jobs:
-  sonarcloud:
+  job_1:
+    name: Printing
+    runs-on: ubunutu-latest
+    steps:
+      - name: Printing hello world
+        run: |
+          echo: This is my first job
+  job_2:    
     name: SonarCloud
-    runs-on: ubuntu-latest
+    runs-on: ubunutu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
