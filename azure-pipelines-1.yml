@@ -1,6 +1,6 @@
 name: example
 trigger:
-- push
+- pull
 
 jobs:
 pool:
