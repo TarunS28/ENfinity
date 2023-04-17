@@ -1,13 +1,10 @@
+name: example
 trigger:
-- master
+- push
 
+jobs:
 pool:
  vmImage: ubuntu-latest
-steps:
-- script: echo hello world
-  displayName: Printing hello
 
-- script: |
-   echo How are you
-   echo I am good
-  displayName: Multi line script
+ displayName: Greeting
+ script: echo hello world
